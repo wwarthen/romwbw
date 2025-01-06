@@ -17,7 +17,7 @@ set CPMDIR80=%TOOLS%/cpm/
 
 ::
 :: This PowerShell script validates the build variables passed in.  If
-:: necessary, the user is prmopted to pick the variables.  It then creates
+:: necessary, the user is prompted to pick the variables.  It then creates
 :: an include file that is imbedded in the HBIOS assembly (build.inc).
 :: It also creates a batch command file that sets environment variables
 :: for use by the remainder of this batch file (build_env.cmd).
@@ -114,7 +114,7 @@ copy /b romldr.bin + dbgmon.bin + ..\zsdos\zsys_wbw.bin + ..\cpm22\cpm_wbw.bin o
 copy /b ..\Forth\camel80.bin + nascom.bin + ..\tastybasic\src\tastybasic.bin + game.bin + eastaegg.bin + %NETBOOT% + updater.bin + sysconf.bin + usrrom.bin osimg1.bin || exit /b
 
 if %Platform%==S100 (
-    zxcc slr180 -s100mon/fh
+    zxcc slr180 -s100mon/fh || exit /b
     zxcc mload25 -s100mon || exit /b
     copy /b s100mon.com osimg2.bin || exit /b
 ) else (
@@ -122,6 +122,12 @@ if %Platform%==S100 (
 )
 
 copy /b romldr.bin + dbgmon.bin + ..\zsdos\zsys_wbw.bin osimg_small.bin || exit /b
+
+::
+:: Split off anything above 32K mark of the hbios. This will be relocated to rom bank 3
+::
+
+"%TOOLS%\srecord\srec_cat.exe" hbios_rom.bin -Binary -crop 0x8000 0x10000 -offset -0x8000 -o osimg2.bin -Binary || exit /b
 
 ::
 :: Inject one byte checksum at the last byte of all 4 ROM bank image files.

@@ -1,7 +1,7 @@
 ; Adapted from https://rosettacode.org/wiki/Mandelbrot_set#Z80_Assembly
 ; by Phillip Summers difficultylevelhigh@gmail.com
 ;
-; WBWROM SBV V2 Easteregg
+; WBWROM Easteregg
 ;
 ;  Compute a Mandelbrot set on a simple Z80 computer.
 ;

@@ -12,6 +12,7 @@
 ;  ver.06 by spke (11-12/04/2021, added some comments)
 ;  ver.07 by spke (04-05/04/2022, 134(-5) bytes, +1% speed, using self-modifying code by default)
 ;  ver.071 by PSummers (6/1/2023), ROMWBW version.
+;  ver.072 by PSummers (2/1/2025), ROMWBW version support decompress from another bank.
 ;
 ;  The data must be compressed using the command line compressor by Emmanuel Marty
 ;  The compression is done as follows:
@@ -71,8 +72,17 @@
 		#DEFINE ADD_OFFSET \
 		#DEFCONT \ add hl,de
 
-		#DEFINE BLOCKCOPY \
-		#DEFCONT \ ldir
+		#IF (FONTS_INLINE == TRUE)
+		 #DEFINE BLOCKCOPY ldir
+		 #DEFINE GETHLA ld a,(hl)
+		 #DEFINE GETHLB ld b,(hl)
+		 #DEFINE GETHLC ld c,(hl)
+		#ELSE
+		 #DEFINE BLOCKCOPY call BLKCOPY
+		 #DEFINE GETHLA call READSRCHLA
+		 #DEFINE GETHLB call READSRCHLB
+		 #DEFINE GETHLC call READSRCHLC
+		#ENDIF
 	#ELSE
 		#DEFINE NEXT_HL \
 		#DEFCONT \ dec hl
@@ -86,6 +96,7 @@
 	#ENDIF
 
 DLZSA2:
+
 		; in many places we assume that B = 0
 		; flag P in A' signals the need to re-load the nibble store
 		xor a \ ld b,a \ ex af,af' \ jr ReadToken
@@ -106,7 +117,7 @@ CASE01x:		; token "01Z" stands for 9-bit offsets
 			cp %01100000
 doRLB			rl b
 
-OffsetReadC:		ld c,(hl) \ NEXT_HL
+OffsetReadC:		GETHLC \ NEXT_HL
 		
 	#IFNDEF	AVOID_SELFMODIFYING_CODE
 SaveOffset:		ld (PrevOffset),bc \ ld b,0
@@ -129,7 +140,7 @@ PrevOffset		.EQU $+1 \ ld hl,0
 			BLOCKCOPY	; BC = 0, DE = dest
 			pop hl		; HL = src
 
-ReadToken:	ld a,(hl) \ NEXT_HL \ push af
+ReadToken:	GETHLA \ NEXT_HL \ push af
 		and %00011000 \ jr z,NoLiterals
 
 			rrca \ rrca \ rrca
@@ -147,7 +158,7 @@ CASE1xx		cp %11000000 \ jr c,CASE10x
 
 CASE110:		; token "110" stands for 16-bit offset
 			; (read a byte for offset bits 8-15, then another byte for offset bits 0-7)
-			ld b,(hl) \ NEXT_HL \ jr OffsetReadC
+			GETHLB \ NEXT_HL \ jr OffsetReadC
 
 CASE10x:		; token "10Z" stands for 13-bit offsets
 			; (read a nibble for offset bits 9-12 and use the inverted bit Z
@@ -160,19 +171,69 @@ CASE10x:		; token "10Z" stands for 13-bit offsets
 
 ExtendedCode:	call ReadNibble \ inc a \ jr z,ExtraByte
 		sub $F0+1 \ add a,c \ ret
-ExtraByte	ld a,15 \ add a,c \ add a,(hl) \ NEXT_HL \ ret nc
-		ld a,(hl) \ NEXT_HL
-		ld b,(hl) \ NEXT_HL \ ret nz
+ExtraByte	GETHLA \ add a,15 \ add a,c \ NEXT_HL \ ret nc
+		GETHLA \ NEXT_HL
+		GETHLB \ NEXT_HL \ ret nz
 		pop bc			; RET is not needed, because RET from ReadNibble is sufficient
 
 
 ReadNibble:	ld c,a
 skipLDCA	xor a \ nop \ ex af,af' \ ret m		; NOP for Z280 bug
-		ld a,(hl) \ or $F0 \ ex af,af'
-		ld a,(hl) \ NEXT_HL \ or $0F
+		GETHLA \ or $F0 \ ex af,af'
+		GETHLA \ NEXT_HL \ or $0F
 		rrca \ rrca \ rrca \ rrca \ ret
 
 ; The extraneous NOP instruction above is to workaround a bug in the
 ; Z280 processor where ex af,af' can copy rather than swap the flags
 ; register.
 ; See https://www.retrobrewcomputers.org/forum/index.php?t=msg&goto=10183&
+
+#IF (FONTS_INLINE == FALSE)
+;
+;
+;   READ A SOURCE BYTE FROM ANOTHER BANK
+;   SOURCE ADDRESS IN HL AND BANK IN D, VALUE RETURNED IN A, B or C
+;
+READSRCHLA:
+	push	de
+	push	af
+	ld	d,BID_IMG2
+	call	SYS_PEEK
+	pop	af
+	ld	a,e
+	pop	de
+	ret
+;
+READSRCHLB:
+	push	de
+	push	af
+	ld	d,BID_IMG2
+	call	SYS_PEEK
+	pop	af
+	ld	b,e
+	pop	de
+	ret
+;
+READSRCHLC:
+	push	de
+	push	af
+	ld	d,BID_IMG2
+	call	SYS_PEEK
+	pop	af
+	ld	c,e
+	pop	de
+	ret
+;
+BLKCOPY:push	af
+BLKCOPY_lp:
+	call	READSRCHLA
+	ld	(de),a
+	inc	hl
+	inc	de
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,BLKCOPY_lp
+	pop	af
+	ret
+#ENDIF
