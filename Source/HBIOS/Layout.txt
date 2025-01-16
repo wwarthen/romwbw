@@ -5,34 +5,49 @@ Final Output Files
 ROM Output File [512K] -> <config>.rom
   hbios_rom [32K]
   OSIMG  [32K]
-  OSIMG1 [32K] 
-  OSIMG  [32K] (used as filler)
+  OSIMG1 [32K]
+  OSIMG2 [32K]
   romdisk - [384K]
 
-COM Output File -> <config>.com
-  hbios_com [varies]
-  OSIMG [32K]
+UPD Output File [128K] -> <config>.upd
+  hbios_rom [32K]
+  OSIMG  [32K]
+  OSIMG1 [32K]
+  OSIMG2 [32K]
 
-IMG Output File -> <config>.img
-  hbios_img [varies]
-  OSIMG [32K]
+COM Output File -> <config>.com
+  hbios_app [varies]
+  OSIMG_SMALL [32K]
 
 -------------------------
 Intermediate Output Files
 -------------------------
 
 OSIMG [32K] -> osimg.bin
-  romldr [3.5K]
-  eastaegg [0.5K]
-  dbgmon [4K]		
+  romldr [4K]
+  dbgmon [4K]
+  ZSYS (zcpr/zsdos/cbios) [12K]
   CPM (ccp/bdos/cbios) [12K]
+
+OSIMG_SMALL [20K] -> osimg_small.bin
+  romldr [4K]
+  dbgmon [4K]
   ZSYS (zcpr/zsdos/cbios) [12K]
 
-OSIMG1 [32K] -> osimg0.bin
-  camel80 [5.75K]
-  nascom [8K]
-  tastybasic [2.25K]
-  imagepad0 [-]
+OSIMG1 [32K] -> osimg1.bin
+  camel80     [5.75K]
+  nascom      [8K]
+  tastybasic  [2.5K]
+  game        [2.25K]
+  eastaegg    [0.5K]
+  netboot     [4K]
+  updater.bin [3.25K]
+  sysconf.bin [2K]
+  usrrom.bin  [3.75K (padded)]
+
+OSIMG2 [32K] -> osimg2.bin
+  s100mon     [8.25kb (optional)]
+  (OR) not populated
 
 CPM [12K] -> cpm.bin
   ccp [2K]
@@ -48,7 +63,7 @@ ZSYS [12K] -> zsys.bin
 Compilation Units
 -----------------
 
-hbios.asm -> hbios_rom.bin, hbios_app.bin, hbios_img.bin
+hbios.asm -> hbios_rom.bin, hbios_app.bin
   std.asm
     ver.inc
     hbios.inc
@@ -92,7 +107,7 @@ eastaegg.asm -> eastaegg.bin
 
 Forth\camel80.azm -> Forth\camel80.bin -> ..\camel80.bin
   camel80d.azm
-  camel80h.azm	
+  camel80h.azm
 
 nascom.asm -> nascom.bin
   std.asm
@@ -109,8 +124,8 @@ tastybasic.asm -> tastybasic.bin
     build.inc
       <config>.asm
     plt_<platform>.inc
- 
-  
+
+
 =======================================================================
 HBIOS Loading Modes:
   ROMBOOT: Startup from ROM Bank BID_BOOT

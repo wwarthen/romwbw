@@ -191,11 +191,6 @@ MESSAGE:
 ;
 SLACK	.EQU	(USR_END - $)
 ;
-#IF (SLACK < 0)
-	.ECHO	"*** USRAPP IS TOO BIG!!!\n"
-	!!!	; FORCE AN ASSEMBLY ERROR
-#ENDIF
-;
 	.FILL	SLACK,$00
 	.ECHO	"User ROM space remaining: "
 	.ECHO	SLACK

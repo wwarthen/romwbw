@@ -32,11 +32,17 @@ CPM_ENT		.EQU	CBIOS_LOC		; CPM ENTRY POINT (IN CBIOS)
 ;
 CPM_IMGSIZ	.EQU	$3000
 ;
-; =================
-; ROM BANK 1 LAYOUT
-; =================
+; =============================
+; ROM BANK 0    (hbios_rom.bin)
+; =============================
 ;
-LDR_LOC		.EQU	$0000
+; See hbios.asm for content of Bank 0
+;
+; =============================
+; ROM BANK 1 LAYOUT (osimg.bin)
+; =============================
+;
+LDR_LOC		.EQU	$0000			; ROM LOADER
 LDR_SIZ		.EQU	$1000
 LDR_END		.EQU	LDR_LOC +LDR_SIZ
 LDR_IMGLOC	.EQU	$0000
@@ -46,13 +52,16 @@ MON_SIZ		.EQU	$1000			; SIZE OF MONITOR BINARY IMAGE
 MON_END		.EQU	MON_LOC + MON_SIZ	; END OF MONITOR
 MON_IMGLOC	.EQU	LDR_IMGLOC + LDR_SIZ
 ;
-ZSYS_IMGLOC	.EQU	MON_IMGLOC + MON_SIZ
+ZSYS_IMGLOC	.EQU	MON_IMGLOC + MON_SIZ	; ZSDOS / Z-System
 ;
-CPM_IMGLOC	.EQU	ZSYS_IMGLOC + CPM_IMGSIZ
+CPM_IMGLOC	.EQU	ZSYS_IMGLOC + CPM_IMGSIZ ; CP/M 2.2
 ;
-; =================
-; ROM BANK 2 LAYOUT
-; =================
+BNK1_IMGEND	.EQU	CPM_IMGLOC + CPM_IMGSIZ	; END OF BANK
+BNK1_REMAIN	.EQU	BNKTOP - BNK1_IMGEND	; REMAINING
+;
+; ==============================
+; ROM BANK 2 LAYOUT (osimg1.bin)
+; ==============================
 ;
 FTH_LOC		.EQU	$0200			; CAMEL FORTH
 FTH_SIZ		.EQU	$1700
@@ -96,6 +105,41 @@ NVR_END		.EQU	NVR_LOC + NVR_SIZ
 NVR_IMGLOC	.EQU	UPD_IMGLOC + UPD_SIZ
 ;
 USR_LOC		.EQU	$0200			; USER
-USR_SIZ		.EQU	BNKTOP - NVR_IMGLOC - NVR_SIZ
+USR_SIZ		.EQU	$0200
 USR_END		.EQU	USR_LOC + USR_SIZ
 USR_IMGLOC	.EQU	NVR_IMGLOC + NVR_SIZ
+;
+BNK2_IMGEND	.EQU	USR_IMGLOC + USR_SIZ	; END OF BANK
+BNK2_REMAIN	.EQU	BNKTOP - BNK2_IMGEND	; REMAINING
+;
+; ==============================
+; ROM BANK 3 LAYOUT (osimg2.bin)
+; ==============================
+;
+; not defined here, see build files
+; optionally contains S100 monitor
+;
+; =================
+;
+#IFDEF BNKINFO
+	.ECHO "-------------------------------\n"
+	.ECHO "ROM BANK INFO  \tLENGTH \tREMAIN \n"
+	.ECHO "---------------\t-------\t-------\n"
+	.ECHO "BANK1 BID_IMG0 \t" \ .ECHO BNK1_IMGEND \ .ECHO "\t" \ .ECHO BNK1_REMAIN \ .ECHO "\n"
+	.ECHO "BANK2 BID_IMG1 \t" \ .ECHO BNK2_IMGEND \ .ECHO "\t" \ .ECHO BNK2_REMAIN \ .ECHO "\n"
+	.ECHO "-------------------------------\n"
+;
+  #IF (BNK1_IMGEND > BNKTOP)
+	.ECHO	"*** BANK 1 IS TOO BIG!!!\n"
+	!!!	; FORCE AN ASSEMBLY ERROR IF BANK SIZE EXCEEDS SPACE
+  #ENDIF
+  #IF (BNK2_IMGEND > BNKTOP)
+	.ECHO	"*** BANK 2 IS TOO BIG!!!\n"
+	!!!	; FORCE AN ASSEMBLY ERROR IF BANK SIZE EXCEEDS SPACE
+  #ENDIF
+;
+#ENDIF
+
+
+
+
